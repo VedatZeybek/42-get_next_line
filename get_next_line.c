@@ -4,38 +4,76 @@
 #include <stdio.h>
 #include <fcntl.h>
 
+int	find_next_line(char *buffer)
+{
+	int	i;
+
+	i = 0;
+	while (buffer[i])
+	{
+		if (buffer[i] == '\n')
+			return (i + 1); // '\n' karakterini atla
+		i++;
+	}
+	return (-1);
+}
+
 char	*get_next_line(int fd)
 {
 
 	static char	*buffer;
+	char		*new_buffer;
 	char		*line;
+	char		*temp;
 	int 		read_byte;
 	int			i;
 	int			j;
 
-	buffer = malloc(BUFFER_SIZE + 1);
-	line = malloc(BUFFER_SIZE + 1);
-	read_byte = read(fd, buffer, BUFFER_SIZE);
-	i = 0;
-	buffer[read_byte] = '\0'; //void *dest_buufferda must be modifiable value hatası veriyor
-	printf("buffer: %s\n", buffer);
-	while (buffer && buffer[i] != '\n')
+	if (!buffer)
 	{
-		line[i] = buffer[i];
-		i++;
+		buffer = malloc(BUFFER_SIZE + 1);
+		if (!buffer)
+			return (NULL);
+		buffer[0] = '\0'; // sıfırla !!! //İÇİNİ SIFIRLAMAZSAN ÇÖP DEĞERLER KALIYOR.
+
 	}
-	line[i] = '\0';
-	j = 0;
-	while (buffer[j + i])
+	//printf("before buffer: %s\n", buffer);
+	i = find_next_line(buffer);
+
+	while (i <= 0)
 	{
-		buffer[j] = buffer[j + i];
-		j++;
+		temp = malloc(BUFFER_SIZE + 1);
+		if (!temp)
+			return (NULL);
+		read_byte = read(fd, temp, BUFFER_SIZE);
+		if (read_byte <= 0)
+		{
+			free(temp);
+			if (buffer[0] == '\0')
+				return (NULL);
+			line = buffer;
+			buffer = NULL;
+			return (line);
+		}
+		temp[read_byte] = '\0';
+		buffer = ft_strjoin(buffer, temp);
+		free(temp);
+		i = find_next_line(buffer);
 	}
-	buffer[i + j] = '\0';
+	//printf("after buffer: %s\n", buffer);
+
+	line = ft_substr(buffer, 0, i);
+
+
+	new_buffer = ft_substr(buffer, i, ft_strlen(buffer) - i); //BAŞINDA \n KARAKTERİ BIRAKIYORSUN
+	free(buffer); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	buffer = new_buffer;
+	//printf("Saigono buffer %s \n", buffer);
+
+	
+	//free(new_buffer); !!BU HER ŞEYİ BOZAR
 	return (line);
 }
-
-
 
 
 // static variable buffer kullan. bufferı oku.
@@ -49,11 +87,12 @@ int main()
         perror("Error opening file");
         return 1;
     }
-	
-	printf("read result: %s \n", get_next_line(fd));
-	printf("read result: %s \n", get_next_line(fd));
 
-	//printf("dest buffer : %s \n", 	get_next_line(fd)
+	
+	printf("Line: %s", get_next_line(fd)); 
+	printf("Line: %s", get_next_line(fd));
+	printf("Line: %s", get_next_line(fd)); 
+
 
     close(fd);
     return 0;
