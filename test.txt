@@ -1,2 +1,3 @@
-whats up guys so today we are doing some get_next_line exercises
+whats up guys
+so today we are doing some get_next_line exercises
 thats all everything is fcked up

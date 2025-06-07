@@ -1,57 +1,45 @@
 #include "get_next_line.h"
 #include <stddef.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <fcntl.h>
 
 char	*get_next_line(int fd)
 {
-	char		*line;
+
 	static char	*buffer;
-	int			bytes_read;
+	char		*line;
+	int 		read_byte;
 	int			i;
 	int			j;
 
-	if (!buffer)
-		buffer = malloc(BUFFER_SIZE + 1);
-	if (!buffer)
-		return (NULL);
-	
+	buffer = malloc(BUFFER_SIZE + 1);
 	line = malloc(BUFFER_SIZE + 1);
-	if (!line)
-		return NULL;
-
-	bytes_read = read(fd, buffer, BUFFER_SIZE);
-
-	if (bytes_read <= 0)  
-	{
-		free(line);
-		return NULL;
-	}
-	buffer[bytes_read] = '\0';
-
+	read_byte = read(fd, buffer, BUFFER_SIZE);
 	i = 0;
-	while (buffer[i] != '\n' && buffer[i] != '\0')
+	buffer[read_byte] = '\0'; //void *dest_buufferda must be modifiable value hatası veriyor
+	printf("buffer: %s\n", buffer);
+	while (buffer && buffer[i] != '\n')
 	{
 		line[i] = buffer[i];
 		i++;
 	}
-
-	line[i] = '\0';  
-	
+	line[i] = '\0';
 	j = 0;
-	if (buffer[i] == '\n')
+	while (buffer[j + i])
 	{
-		while (buffer[i + j + 1] != '\0')
-		{
-			buffer[i] = buffer[i + j + 1];
-			j++;
-		}
+		buffer[j] = buffer[j + i];
+		j++;
 	}
- return line;  // Okunan satırı döndür
+	buffer[i + j] = '\0';
+	return (line);
 }
 
 
-#include <stdio.h>
-#include <fcntl.h>
+
+
+// static variable buffer kullan. bufferı oku.
+// bufferın içinden next lineı bul. 
 
 int main()
 {
@@ -61,15 +49,12 @@ int main()
         perror("Error opening file");
         return 1;
     }
+	
+	printf("read result: %s \n", get_next_line(fd));
+	printf("read result: %s \n", get_next_line(fd));
 
-    char *line = get_next_line(fd);
-    while (line)  // Dosyanın sonuna kadar her satırı oku
-    {
-        printf("%s\n", line);
-        free(line);  // Okunan satırı serbest bırak
-        line = get_next_line(fd);
-    }
+	//printf("dest buffer : %s \n", 	get_next_line(fd)
 
-    close(fd);  // Dosyayı kapat
+    close(fd);
     return 0;
 }

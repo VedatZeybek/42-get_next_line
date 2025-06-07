@@ -2,6 +2,11 @@
 	"files.associations": {
 		"stdio.h": "c",
 		"get_next_line.h": "c",
-		"fcntl.h": "c"
+		"fcntl.h": "c",
+		"corecrt_wstdlib.h": "c",
+		"corecrt.h": "c",
+		"_mingw.h": "c",
+		"limits.h": "c",
+		"syslimits.h": "c"
 	}
 }
