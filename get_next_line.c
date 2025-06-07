@@ -18,28 +18,12 @@ int	find_next_line(char *buffer)
 	return (-1);
 }
 
-char	*get_next_line(int fd)
+char	*read_until_next_line(char *temp, int fd, char *buffer, char *line, int read_byte)
 {
+	char 	*old_buffer;
+	int		i;
 
-	static char	*buffer;
-	char		*new_buffer;
-	char		*line;
-	char		*temp;
-	int 		read_byte;
-	int			i;
-	int			j;
-
-	if (!buffer)
-	{
-		buffer = malloc(BUFFER_SIZE + 1);
-		if (!buffer)
-			return (NULL);
-		buffer[0] = '\0'; // sıfırla !!! //İÇİNİ SIFIRLAMAZSAN ÇÖP DEĞERLER KALIYOR.
-
-	}
-	//printf("before buffer: %s\n", buffer);
 	i = find_next_line(buffer);
-
 	while (i <= 0)
 	{
 		temp = malloc(BUFFER_SIZE + 1);
@@ -56,22 +40,47 @@ char	*get_next_line(int fd)
 			return (line);
 		}
 		temp[read_byte] = '\0';
-		buffer = ft_strjoin(buffer, temp);
+		old_buffer = buffer; // PREVENT MEMORY LEAK
+		buffer = ft_strjoin(old_buffer, temp);
+		free(old_buffer);
 		free(temp);
 		i = find_next_line(buffer);
 	}
-	//printf("after buffer: %s\n", buffer);
+	return (buffer);
+}
 
+char	*get_next_line(int fd)
+{
+	static char	*buffer;
+	char		*new_buffer;
+	char		*line;
+	char		*temp;
+	int 		read_byte;
+	int			i;
+
+	if (fd < 0 || BUFFER_SIZE <= 0)
+        return (NULL);
+	if (!buffer)
+	{
+		buffer = malloc(BUFFER_SIZE + 1);
+		if (!buffer)
+			return (NULL);
+		buffer[0] = '\0'; // sıfırla !!! İÇİNİ SIFIRLAMAZSAN ÇÖP DEĞERLER KALIYOR.
+	}
+	//printf("before buffer: %s\n", buffer);
+	i = find_next_line(buffer);
+	if (i <= 0)
+		buffer = read_until_next_line(temp, fd, buffer, line, read_byte);
+	printf("after buffer: %s\n", buffer);
+	if (buffer == NULL)
+		return (NULL);
+	i = find_next_line(buffer);
+	printf("i: %d\n", i);
 	line = ft_substr(buffer, 0, i);
-
-
 	new_buffer = ft_substr(buffer, i, ft_strlen(buffer) - i); //BAŞINDA \n KARAKTERİ BIRAKIYORSUN
 	free(buffer); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	buffer = new_buffer;
 	//printf("Saigono buffer %s \n", buffer);
-
-	
-	//free(new_buffer); !!BU HER ŞEYİ BOZAR
 	return (line);
 }
 
@@ -88,10 +97,10 @@ int main()
         return 1;
     }
 
-	
-	printf("Line: %s", get_next_line(fd)); 
-	printf("Line: %s", get_next_line(fd));
-	printf("Line: %s", get_next_line(fd)); 
+	printf("Line: %s\n", get_next_line(fd));
+	printf("Line: %s\n", get_next_line(fd));
+	printf("Line: %s\n", get_next_line(fd));
+	printf("Line: %s\n", get_next_line(fd));
 
 
     close(fd);
