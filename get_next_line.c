@@ -1,27 +1,43 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: vzeybek <vzeybek@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/06/14 11:30:14 by vzeybek           #+#    #+#             */
+/*   Updated: 2025/06/14 21:35:55 by vzeybek          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "get_next_line.h"
-#include <stddef.h>
 #include <unistd.h>
-#include <stdio.h>
 #include <fcntl.h>
+#include <stdio.h>
+
 
 int	find_next_line(char *buffer)
 {
 	int	i;
 
 	i = 0;
+	if (!buffer)
+		return (-1);
 	while (buffer[i])
 	{
 		if (buffer[i] == '\n')
-			return (i + 1); // '\n' karakterini atla
+			return (i + 1);
 		i++;
 	}
 	return (-1);
 }
 
-char	*read_until_next_line(char *temp, int fd, char *buffer, char *line, int read_byte)
+char	*read_until_next_line(int fd, char *buffer)
 {
-	char 	*old_buffer;
+	char	*old_buffer;
 	int		i;
+	int		read_byte;
+	char	*temp;
 
 	i = find_next_line(buffer);
 	while (i <= 0)
@@ -33,17 +49,15 @@ char	*read_until_next_line(char *temp, int fd, char *buffer, char *line, int rea
 		if (read_byte <= 0)
 		{
 			free(temp);
-			if (buffer[0] == '\0')
-				return (NULL);
-			line = buffer;
-			buffer = NULL;
-			return (line);
+			return (buffer);
 		}
 		temp[read_byte] = '\0';
-		old_buffer = buffer; // PREVENT MEMORY LEAK
+		old_buffer = buffer;
 		buffer = ft_strjoin(old_buffer, temp);
 		free(old_buffer);
 		free(temp);
+		if (!buffer)
+			return (NULL);
 		i = find_next_line(buffer);
 	}
 	return (buffer);
@@ -54,55 +68,71 @@ char	*get_next_line(int fd)
 	static char	*buffer;
 	char		*new_buffer;
 	char		*line;
-	char		*temp;
-	int 		read_byte;
 	int			i;
 
 	if (fd < 0 || BUFFER_SIZE <= 0)
-        return (NULL);
+		return (NULL);
 	if (!buffer)
 	{
 		buffer = malloc(BUFFER_SIZE + 1);
 		if (!buffer)
 			return (NULL);
-		buffer[0] = '\0'; // sıfırla !!! İÇİNİ SIFIRLAMAZSAN ÇÖP DEĞERLER KALIYOR.
+		buffer[0] = '\0';
 	}
-	//printf("before buffer: %s\n", buffer);
 	i = find_next_line(buffer);
 	if (i <= 0)
-		buffer = read_until_next_line(temp, fd, buffer, line, read_byte);
-	printf("after buffer: %s\n", buffer);
-	if (buffer == NULL)
+	{
+		buffer = read_until_next_line(fd, buffer);
+		if (buffer == NULL)
+			return (NULL);
+	}
+	if (buffer[0] == '\0')
+	{
+		free(buffer);
+		buffer = NULL;
 		return (NULL);
+	}
 	i = find_next_line(buffer);
-	printf("i: %d\n", i);
+	if (i <= 0) // Newline yoksa tüm buffer'ı line olarak al
+		i = ft_strlen(buffer);
 	line = ft_substr(buffer, 0, i);
-	new_buffer = ft_substr(buffer, i, ft_strlen(buffer) - i); //BAŞINDA \n KARAKTERİ BIRAKIYORSUN
-	free(buffer); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	new_buffer = ft_substr(buffer, i, ft_strlen(buffer) - i);
+	free(buffer);
 	buffer = new_buffer;
-	//printf("Saigono buffer %s \n", buffer);
+
+	if (buffer && buffer[0] == '\0')
+	{
+		free(buffer);
+		buffer = NULL;
+	}
 	return (line);
 }
 
 
-// static variable buffer kullan. bufferı oku.
-// bufferın içinden next lineı bul. 
-
 int main()
 {
-    int fd = open("test.txt", O_RDONLY);
-    if (fd == -1)
-    {
-        perror("Error opening file");
-        return 1;
-    }
+	int fd = open("text.txt" , O_CREAT | O_RDWR, 0644);
+	if (fd == -1)
+	{
+		printf("error\n");
+		return (1);
+	}
+	
+	char *n1 = get_next_line(fd);
+	char *n2 = get_next_line(fd);
+	char *n3 = get_next_line(fd);
+	char *n4 = get_next_line(fd);
+	
+	printf("Line 1: %s\n", n1);
+	printf("Lİne 2: %s\n", n2);
+	printf("Line 3: %s\n", n3);
+	printf("Line 4: %s\n", n4);
 
-	printf("Line: %s\n", get_next_line(fd));
-	printf("Line: %s\n", get_next_line(fd));
-	printf("Line: %s\n", get_next_line(fd));
-	printf("Line: %s\n", get_next_line(fd));
+	if (n1) free(n1);
+	if (n2) free(n2);
+	if (n3) free(n3);
+	if (n4) free(n4);
 
+	close(fd);
 
-    close(fd);
-    return 0;
 }
